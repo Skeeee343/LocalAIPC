@@ -10,6 +10,7 @@
     discord_user_id: "" # owner numeric user ID, fill when bot created
     discord_bot_token: "" # vault only, never commit; written to /opt/localaipc/.env
     sp_token: "" # vault only, SP bearer token; written to /opt/localaipc/.env
+    tailscale_authkey: "" # vault only, reusable pre-auth key from tailscale.com/admin
     backup_dir: /var/backups/localaipc
   tasks:
     - name: check for secrets file
@@ -62,6 +63,21 @@
         dest: /opt/localaipc/.env
         mode: "0600"
       when: discord_bot_token | length > 0 or sp_token | length > 0
+      no_log: true
+
+    - name: tailscale installed (bridge to SP machine, ADR-001)
+      ansible.builtin.shell: curl -fsSL https://tailscale.com/install.sh | sh
+      args: { creates: /usr/bin/tailscale }
+
+    - name: tailscale status
+      ansible.builtin.command: tailscale status
+      register: ts_status
+      changed_when: false
+      failed_when: false
+
+    - name: tailscale up (vault key only, never commit)
+      ansible.builtin.command: tailscale up --auth-key {{ tailscale_authkey }} --hostname localaipc
+      when: ts_status.rc != 0 and tailscale_authkey | length > 0
       no_log: true
 
     - name: backup script from template

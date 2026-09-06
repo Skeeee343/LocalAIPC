@@ -34,6 +34,14 @@ Re-running `apply` with no drift changes nothing.
 | MCP adapter | `curl -sf localhost:3000/health` | 200 |
 | GPU | `nvidia-smi -L` | P2000 listed |
 
+## Super Productivity (ADR-001 topology: desktop app + local adapter, server over Tailscale)
+
+1. Install the regular desktop app on your daily-use machine ([downloads wiki](https://github.com/super-productivity/super-productivity/wiki/2.01-Downloads-and-Install)): snap (`snap install superproductivity`) or Flatpak on Linux, dmg/pkg on macOS, installer on Windows. Use it normally first (tasks, a repeating chore, a habit).
+2. In SP settings, enable the local REST API and copy the bearer token → `sp_token` in `ansible/secrets.yml` (vault).
+3. Run the MCP adapter beside SP (same machine, so `SP_BASE_URL=http://localhost:8080` holds): `SP_TOKEN=<token> python3 mcp/server.py`. It already binds `0.0.0.0:3000` for tailnet reachability — never expose it publicly.
+4. Tailscale on both ends: server joins via playbook (`tailscale_authkey` = reusable pre-auth key from tailscale.com/admin → `make apply`); install app/login on the SP machine. Verify: from server, `tailscale status` shows the SP machine, and `curl http://<sp-tailnet-ip>:3000/health` returns ok.
+5. OpenClaw MCP config points at the adapter over tailnet (wired at first host run, #6).
+
 ## Messaging (ADR-005, accepted: Discord → Telegram → Signal)
 
 Trial order is least-ops-first. One primary only. WebChat always available as fallback.
