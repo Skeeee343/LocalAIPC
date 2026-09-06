@@ -30,7 +30,7 @@ Re-running `apply` with no drift changes nothing.
 | Target | Command | Expect |
 |---|---|---|
 | Ollama (native) | `curl -s localhost:11434/api/tags` | model list incl. `qwen3:4b` |
-| OpenClaw | `curl -sf localhost:8787/health` | 200 |
+| OpenClaw | `curl -sf localhost:8787/healthz` | 200 (deep: `/readyz`) |
 | MCP adapter | `curl -sf localhost:3000/health` | 200 |
 | GPU | `nvidia-smi -L` | P2000 listed |
 

@@ -16,3 +16,5 @@ Local-first = adapter must run beside the SP client (localhost REST). No remote-
 
 `create task / update recurrence / complete occurrence / read counters+history / task-complete hook` × (REST / plugin / file).
 If REST gaps: add minimal SP plugin, else fallback to Donetick sidecar for chores.
+
+Note: official `super-productivity/super-productivity` Docker image serves the static web UI only — task data lives in the browser (or sync backend), there is no server DB. It is not an agent backend; the MCP path needs the desktop app's localhost REST.

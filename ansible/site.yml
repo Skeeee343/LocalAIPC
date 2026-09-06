@@ -4,8 +4,8 @@
   become: true
   vars:
     ollama_model: "qwen3:4b" # pinned, see ADR-002
-    openclaw_image: "openclaw:latest" # TODO: pin digest
-    mcp_image: "localaipc-mcp:latest" # TODO: pin digest
+    openclaw_image: "ghcr.io/openclaw/openclaw:2026.9.2@sha256:a8604855b76cd613cbaa45d6db093dc017b09a2faea5dc9cee023fb7ac262250" # GHCR primary, immutable version+digest
+    mcp_image: "localaipc-mcp:latest" # local build; base pinned in mcp/Dockerfile instead
     discord_guild_id: "" # private server ID, fill when bot created (ADR-005)
     discord_user_id: "" # owner numeric user ID, fill when bot created
     discord_bot_token: "" # vault only, never commit; written to /opt/localaipc/.env

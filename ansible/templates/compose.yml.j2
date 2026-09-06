@@ -1,10 +1,10 @@
 services:
   openclaw:
     image: "{{ openclaw_image }}"
-    ports: ["8787:8787"]
+    ports: ["8787:18789"] # official image listens on 18789 (healthz/startupz/readyz, no auth)
     restart: unless-stopped
     env_file: [/opt/localaipc/.env] # DISCORD_BOT_TOKEN + SP_TOKEN, vault-sourced, optional
-    healthcheck: { test: ["CMD", "curl", "-f", "http://localhost:8787/health"], interval: 30s, retries: 3 }
+    healthcheck: { test: ["CMD", "curl", "-f", "http://localhost:18789/healthz"], interval: 30s, retries: 3 }
   mcp-adapter:
     build: /opt/localaipc/mcp
     image: "{{ mcp_image }}"
