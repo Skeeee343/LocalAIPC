@@ -1,0 +1,9 @@
+[Unit]
+Description=LocalAIPC backup (data+config only, no model blobs)
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target

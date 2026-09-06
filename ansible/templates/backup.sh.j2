@@ -1,0 +1,19 @@
+#!/bin/sh
+# LocalAIPC backup: data + config only, never model blobs (ADR-003).
+# Runs as root via localaipc-backup.service. Destroys nothing, repairs nothing.
+set -eu
+DEST="{{ backup_dir }}"
+mkdir -p "$DEST"
+chmod 0700 "$DEST"
+TS=$(date +%F-%H%M)
+OUT="$DEST/localaipc-$TS.tar.gz"
+tar -czf "$OUT" --exclude='opt/localaipc/mcp/__pycache__' -C / opt/localaipc
+chmod 0600 "$OUT"
+# Retention: daily 7d, Sundays 28d, 1st-of-month 93d.
+is_old() { [ -n "$(find "$1" -mtime +"$2" 2>/dev/null)" ]; }
+find "$DEST" -maxdepth 1 -name 'localaipc-*.tar.gz' | while read -r f; do
+  d=$(basename "$f" .tar.gz); d=${d#localaipc-}; d=${d%-*}
+  if [ "$(date -d "$d" +%d)" = "01" ] && ! is_old "$f" 93; then continue; fi
+  if [ "$(date -d "$d" +%u)" = "7" ] && ! is_old "$f" 28; then continue; fi
+  if is_old "$f" 7; then rm -f "$f"; fi
+done

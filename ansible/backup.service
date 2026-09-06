@@ -1,0 +1,6 @@
+[Unit]
+Description=LocalAIPC backup run (data+config only, no model blobs)
+
+[Service]
+Type=oneshot
+ExecStart=/opt/localaipc/backup.sh

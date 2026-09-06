@@ -1,0 +1,23 @@
+// LocalAIPC Discord fragment (ADR-005). Apply: openclaw config patch --file /opt/localaipc/discord.patch.json5
+// Token resolves from DISCORD_BOT_TOKEN env (never committed). IDs set via ansible vars.
+{
+  channels: {
+    discord: {
+      enabled: true,
+      token: { source: "env", provider: "default", id: "DISCORD_BOT_TOKEN" },
+      dmPolicy: "pairing",
+{% if discord_user_id %}
+      allowFrom: ["{{ discord_user_id }}"],
+{% endif %}
+      groupPolicy: "allowlist"
+{% if discord_guild_id and discord_user_id %},
+      guilds: {
+        "{{ discord_guild_id }}": {
+          requireMention: false,
+          users: ["{{ discord_user_id }}"]
+        }
+      }
+{% endif %}
+    }
+  }
+}

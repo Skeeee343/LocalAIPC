@@ -1,0 +1,18 @@
+services:
+  openclaw:
+    image: "{{ openclaw_image }}"
+    ports: ["8787:8787"]
+    restart: unless-stopped
+    env_file: [/opt/localaipc/.env] # DISCORD_BOT_TOKEN + SP_TOKEN, vault-sourced, optional
+    healthcheck: { test: ["CMD", "curl", "-f", "http://localhost:8787/health"], interval: 30s, retries: 3 }
+  mcp-adapter:
+    build: /opt/localaipc/mcp
+    image: "{{ mcp_image }}"
+    ports: ["3000:3000"]
+    restart: unless-stopped
+    env_file: [/opt/localaipc/.env] # SP_TOKEN, vault-sourced, optional
+    environment:
+      SP_BASE_URL: "http://localhost:8080"
+      SP_TOKEN: "${SP_TOKEN:-}"
+    healthcheck: { test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:3000/health',timeout=3)"], interval: 30s, retries: 3 }
+# Ollama + Super Productivity run native (ADR-003), not here.

@@ -1,0 +1,7 @@
+# LocalAIPC secrets — never commit real values.
+ansible/secrets.yml
+.env
+**/.env
+# generated
+__pycache__/
+*.pyc

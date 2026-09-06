@@ -1,0 +1,103 @@
+--- # LocalAIPC single-host converge. Idempotent: re-run repairs, never wipes.
+- name: converge localhost
+  hosts: local
+  become: true
+  vars:
+    ollama_model: "qwen3:4b" # pinned, see ADR-002
+    openclaw_image: "openclaw:latest" # TODO: pin digest
+    mcp_image: "localaipc-mcp:latest" # TODO: pin digest
+    discord_guild_id: "" # private server ID, fill when bot created (ADR-005)
+    discord_user_id: "" # owner numeric user ID, fill when bot created
+    discord_bot_token: "" # vault only, never commit; written to /opt/localaipc/.env
+    sp_token: "" # vault only, SP bearer token; written to /opt/localaipc/.env
+    backup_dir: /var/backups/localaipc
+  tasks:
+    - name: check for secrets file
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/secrets.yml"
+      register: secrets_file
+
+    - name: load secrets file (vault or plaintext, never committed)
+      ansible.builtin.include_vars: "{{ playbook_dir }}/secrets.yml"
+      when: secrets_file.stat.exists
+
+    - name: base packages
+      ansible.builtin.apt:
+        name: [curl, ca-certificates, docker.io, docker-compose-plugin, nvidia-utils]
+        state: present
+        update_cache: true
+
+    - name: ollama installed (native, GPU passthrough pain avoided)
+      ansible.builtin.shell: curl -fsSL https://ollama.com/install.sh | sh
+      args: { creates: /usr/local/bin/ollama }
+
+    - name: ollama model pulled (pinned)
+      ansible.builtin.command: ollama pull {{ ollama_model }}
+      register: pull
+      changed_when: "'up to date' not in pull.stdout"
+      # ponytail: shell pull until ollama ansible module matures; upgrade path is module + version lock
+
+    - name: mcp adapter synced (build context)
+      ansible.builtin.copy:
+        src: ../mcp/
+        dest: /opt/localaipc/mcp/
+        mode: "0644"
+
+    - name: compose file from template
+      ansible.builtin.template:
+        src: compose.yml.j2
+        dest: /opt/localaipc/compose.yml
+        mode: "0644"
+      notify: restart stack
+
+    - name: discord patch fragment from template (ADR-005)
+      ansible.builtin.template:
+        src: discord.patch.json5.j2
+        dest: /opt/localaipc/discord.patch.json5
+        mode: "0600"
+
+    - name: tokens to env file (vault-sourced, never commit)
+      ansible.builtin.copy:
+        content: "DISCORD_BOT_TOKEN={{ discord_bot_token }}\nSP_TOKEN={{ sp_token }}\n"
+        dest: /opt/localaipc/.env
+        mode: "0600"
+      when: discord_bot_token | length > 0 or sp_token | length > 0
+      no_log: true
+
+    - name: backup script from template
+      ansible.builtin.template:
+        src: backup.sh.j2
+        dest: /opt/localaipc/backup.sh
+        mode: "0700"
+
+    - name: backup service installed
+      ansible.builtin.copy:
+        src: backup.service
+        dest: /etc/systemd/system/localaipc-backup.service
+        mode: "0644"
+      notify: reload systemd
+
+    - name: stack up (converge, no wipe)
+      ansible.builtin.command: docker compose -f /opt/localaipc/compose.yml up -d --remove-orphans
+      changed_when: false # ponytail: compose reports drift via --check --diff on template task above
+
+    - name: backup timer installed
+      ansible.builtin.copy:
+        src: backup.timer
+        dest: /etc/systemd/system/localaipc-backup.timer
+        mode: "0644"
+      notify: reload systemd
+      # ponytail: payload now lands via backup.sh + backup.service above
+
+    - name: backup timer enabled
+      ansible.builtin.systemd:
+        name: localaipc-backup.timer
+        enabled: true
+        state: started
+        daemon_reload: true
+
+  handlers:
+    - name: restart stack
+      ansible.builtin.command: docker compose -f /opt/localaipc/compose.yml up -d
+    - name: reload systemd
+      ansible.builtin.systemd: { daemon_reload: true }
