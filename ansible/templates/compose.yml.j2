@@ -4,5 +4,14 @@ services:
     ports: ["8787:18789"] # official image listens on 18789 (healthz/startupz/readyz, no auth)
     restart: unless-stopped
     env_file: [/opt/localaipc/.env] # DISCORD_BOT_TOKEN, vault-sourced, optional
+    extra_hosts: ["host.docker.internal:host-gateway"] # container -> host Ollama (needs OLLAMA_HOST=0.0.0.0, see site.yml)
+    volumes: [/opt/localaipc/openclaw-home:/home/node/.openclaw] # state+config persist; openclaw.json seeded by Ansible
     healthcheck: { test: ["CMD", "curl", "-f", "http://localhost:18789/healthz"], interval: 30s, retries: 3 }
+  openclaw-cli:
+    image: "{{ openclaw_image }}"
+    entrypoint: ["node", "dist/index.js"] # one-shot CLI (config patch, pairing): docker compose --profile cli run --rm openclaw-cli <cmd>
+    env_file: [/opt/localaipc/.env]
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    volumes: [/opt/localaipc/openclaw-home:/home/node/.openclaw]
+    profiles: ["cli"]
 # Ollama native, SP + MCP adapter on Mac (tailnet), not here (ADR-001).

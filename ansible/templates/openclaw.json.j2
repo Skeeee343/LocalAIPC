@@ -1,0 +1,27 @@
+// Seeded by Ansible: gateway boots without `openclaw onboard`.
+// Local-first: Ollama qwen3:4b via host daemon, ADR-002 ctx4K cap (contextTokens + num_ctx aligned).
+// Gateway hot-reloads edits; Discord arrives via discord.patch.json5 (ADR-005).
+{
+  gateway: { mode: "local", port: 18789 },
+  agents: { defaults: { model: { primary: "ollama/qwen3:4b" } } },
+  models: {
+    providers: {
+      ollama: {
+        baseUrl: "http://host.docker.internal:11434",
+        apiKey: "ollama-local",
+        api: "ollama",
+        timeoutSeconds: 300,
+        models: [
+          {
+            id: "qwen3:4b",
+            name: "qwen3:4b",
+            input: ["text"],
+            contextWindow: 262144,
+            contextTokens: 4096,
+            params: { num_ctx: 4096, thinking: false },
+          },
+        ],
+      },
+    },
+  },
+}

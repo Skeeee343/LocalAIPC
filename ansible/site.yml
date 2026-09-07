@@ -84,6 +84,26 @@
         mode: "0644"
       notify: restart stack
 
+    - name: openclaw state dir (config volume backing)
+      ansible.builtin.file:
+        path: /opt/localaipc/openclaw-home
+        state: directory
+        mode: "0755"
+
+    - name: openclaw base config seeded (boots without onboard)
+      ansible.builtin.template:
+        src: openclaw.json.j2
+        dest: /opt/localaipc/openclaw-home/openclaw.json
+        mode: "0644"
+      notify: restart stack
+
+    - name: ollama LAN bind (container reaches host daemon)
+      ansible.builtin.copy:
+        content: "[Service]\nEnvironment=OLLAMA_HOST=0.0.0.0:11434\n"
+        dest: /etc/systemd/system/ollama.service.d/lan.conf
+        mode: "0644"
+      notify: restart ollama
+
     - name: discord patch fragment from template (ADR-005)
       ansible.builtin.template:
         src: discord.patch.json5.j2
@@ -179,5 +199,10 @@
   handlers:
     - name: restart stack
       ansible.builtin.command: docker compose -f /opt/localaipc/compose.yml up -d
+    - name: restart ollama
+      ansible.builtin.systemd:
+        name: ollama
+        state: restarted
+        daemon_reload: true
     - name: reload systemd
       ansible.builtin.systemd: { daemon_reload: true }
