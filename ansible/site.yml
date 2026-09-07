@@ -86,11 +86,19 @@
         mode: "0644"
       notify: restart stack
 
-    - name: openclaw state dir (config volume backing)
+    - name: openclaw image uid (non-root runtime user)
+      ansible.builtin.command: docker run --rm {{ openclaw_image }} id -u
+      register: oc_uid
+      changed_when: false
+
+    - name: openclaw state dir owned by image user (seeded files included)
       ansible.builtin.file:
         path: /opt/localaipc/openclaw-home
         state: directory
+        owner: "{{ oc_uid.stdout }}"
         mode: "0755"
+        recurse: true
+      notify: restart stack
 
     - name: openclaw base config seeded (boots without onboard)
       ansible.builtin.template:
