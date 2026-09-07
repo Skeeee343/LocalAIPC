@@ -24,9 +24,9 @@
       ansible.builtin.include_vars: "{{ playbook_dir }}/secrets.yml"
       when: secrets_file.stat.exists
 
-    - name: base packages
+    - name: remote management (sshd) installed first (later apt failures must never lock us out)
       ansible.builtin.apt:
-        name: [curl, ca-certificates, docker.io, docker-compose-plugin, nvidia-utils, openssh-server]
+        name: openssh-server
         state: present
         update_cache: true
 
@@ -35,6 +35,23 @@
         name: ssh
         enabled: true
         state: started
+
+    - name: universe repo check (docker-compose-plugin lives here on 26.04)
+      ansible.builtin.shell: grep -rq " universe" /etc/apt/sources.list /etc/apt/sources.list.d/ 2>/dev/null
+      register: universe_check
+      changed_when: false
+      failed_when: false
+      # ponytail: grep check until apt_repository module handles DEB822 sources; upgrade path is module + update_cache
+
+    - name: universe repo enabled
+      ansible.builtin.command: add-apt-repository -y universe
+      when: universe_check.rc != 0
+
+    - name: base packages
+      ansible.builtin.apt:
+        name: [curl, ca-certificates, docker.io, docker-compose-plugin, nvidia-utils]
+        state: present
+        update_cache: true
 
     - name: remote management (Mac admin key)
       ansible.builtin.authorized_key:
