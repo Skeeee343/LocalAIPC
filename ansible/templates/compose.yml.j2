@@ -1,6 +1,7 @@
 services:
   openclaw:
-    image: "{{ openclaw_image }}"
+    image: "localaipc-openclaw:2026.9.2" # local build (Dockerfile.openclaw: upstream + ffmpeg for reply pipeline)
+    build: { context: /opt/localaipc, dockerfile: Dockerfile.openclaw }
     ports: ["8787:18789"] # official image listens on 18789 (healthz/startupz/readyz, no auth)
     restart: unless-stopped
     env_file: [/opt/localaipc/.env] # DISCORD_BOT_TOKEN, vault-sourced, optional
@@ -8,7 +9,8 @@ services:
     volumes: [/opt/localaipc/openclaw-home:/home/node/.openclaw] # state+config persist; openclaw.json seeded by Ansible
     healthcheck: { test: ["CMD", "curl", "-f", "http://localhost:18789/healthz"], interval: 30s, retries: 3 }
   openclaw-cli:
-    image: "{{ openclaw_image }}"
+    image: "localaipc-openclaw:2026.9.2"
+    build: { context: /opt/localaipc, dockerfile: Dockerfile.openclaw }
     entrypoint: ["node", "dist/index.js"] # one-shot CLI (config patch, pairing): docker compose --profile cli run --rm openclaw-cli <cmd>
     env_file: [/opt/localaipc/.env]
     extra_hosts: ["host.docker.internal:host-gateway"]

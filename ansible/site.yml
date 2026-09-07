@@ -84,7 +84,14 @@
         src: compose.yml.j2
         dest: /opt/localaipc/compose.yml
         mode: "0644"
-      notify: restart stack
+      notify: rebuild stack
+
+    - name: openclaw Dockerfile rendered (upstream + ffmpeg)
+      ansible.builtin.template:
+        src: Dockerfile.openclaw.j2
+        dest: /opt/localaipc/Dockerfile.openclaw
+        mode: "0644"
+      notify: rebuild stack
 
     - name: openclaw image uid (non-root runtime user)
       ansible.builtin.command: docker run --rm {{ openclaw_image }} id -u
@@ -217,6 +224,8 @@
       when: duckdns_domain | length > 0 and duckdns_token | length > 0
 
   handlers:
+    - name: rebuild stack
+      ansible.builtin.command: docker compose -f /opt/localaipc/compose.yml up -d --build
     - name: restart stack
       ansible.builtin.command: docker compose -f /opt/localaipc/compose.yml up -d
     - name: restart ollama
