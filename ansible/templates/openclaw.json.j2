@@ -1,9 +1,10 @@
 // Seeded by Ansible: gateway boots without `openclaw onboard`.
-// Local-first: Ollama qwen3:4b via host daemon, ADR-002 ctx4K cap (contextTokens + num_ctx aligned).
+// Local-first: Ollama qwen3:4b via host daemon. ctx8K: agent system prompt alone is ~5-10k tokens,
+// so ADR-002's 4K cap starved it (context-pressure timeouts); 8K fits P2000 5GB VRAM at Q4.
 // Gateway hot-reloads edits; Discord arrives via discord.patch.json5 (ADR-005).
 {
   gateway: { mode: "local", port: 18789 },
-  agents: { defaults: { model: { primary: "ollama/qwen3:4b" } } },
+  agents: { defaults: { model: { primary: "ollama/qwen3:4b" }, timeoutSeconds: 300 } },
   models: {
     providers: {
       ollama: {
@@ -17,8 +18,8 @@
             name: "qwen3:4b",
             input: ["text"],
             contextWindow: 262144,
-            contextTokens: 4096,
-            params: { num_ctx: 4096, thinking: false },
+            contextTokens: 8192,
+            params: { num_ctx: 8192, thinking: false },
           },
         ],
       },
