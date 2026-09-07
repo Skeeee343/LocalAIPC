@@ -120,12 +120,6 @@
         mode: "0644"
       notify: restart ollama
 
-    - name: discord patch fragment from template (ADR-005)
-      ansible.builtin.template:
-        src: discord.patch.json5.j2
-        dest: /opt/localaipc/discord.patch.json5
-        mode: "0644" # IDs only (token lives in .env); node-run CLI container must read it
-
     - name: gateway token generated once (root-only, never committed)
       ansible.builtin.shell: openssl rand -hex 32 > /opt/localaipc/.gateway-token && chmod 600 /opt/localaipc/.gateway-token
       args: { creates: /opt/localaipc/.gateway-token }

@@ -4,6 +4,34 @@
 // Gateway hot-reloads edits; Discord arrives via discord.patch.json5 (ADR-005).
 {
   gateway: { mode: "local", port: 18789 },
+{% if discord_bot_token | default("") %}
+  // Discord (ADR-005): single source of truth is this seed — `make apply` converges it,
+  // no manual `config patch` step. Token resolves from DISCORD_BOT_TOKEN env (never committed).
+  plugins: {
+    entries: {
+      discord: { enabled: true }, // explicit trust: gateway refuses untrusted external plugins
+    },
+  },
+  channels: {
+    discord: {
+      enabled: true,
+      token: { source: "env", provider: "default", id: "DISCORD_BOT_TOKEN" },
+      dmPolicy: "pairing",
+{% if discord_user_id %}
+      allowFrom: ["{{ discord_user_id }}"],
+{% endif %}
+      groupPolicy: "allowlist"
+{% if discord_guild_id and discord_user_id %},
+      guilds: {
+        "{{ discord_guild_id }}": {
+          requireMention: false,
+          users: ["{{ discord_user_id }}"]
+        }
+      }
+{% endif %}
+    },
+  },
+{% endif %}
   agents: { defaults: { model: { primary: "ollama/qwen3:4b" }, timeoutSeconds: 300 } },
   models: {
     providers: {
