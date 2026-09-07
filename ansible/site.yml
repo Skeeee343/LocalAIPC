@@ -60,6 +60,13 @@
         state: present
       when: admin_ssh_key | length > 0
 
+    - name: passwordless sudo for ansible user (key auth already gates SSH)
+      ansible.builtin.copy:
+        content: "{{ ansible_user | default(ansible_env.SUDO_USER | default('root')) }} ALL=(ALL) NOPASSWD:ALL\n"
+        dest: "/etc/sudoers.d/{{ ansible_user | default(ansible_env.SUDO_USER | default('root')) }}"
+        mode: "0440"
+        validate: visudo -cf %s
+
     - name: ollama installed (native, GPU passthrough pain avoided)
       ansible.builtin.shell: curl -fsSL https://ollama.com/install.sh | sh
       args: { creates: /usr/local/bin/ollama }
