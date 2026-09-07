@@ -73,10 +73,15 @@ Trial order is least-ops-first. One primary only. WebChat always available as fa
 5. On host, set vault vars (`discord_guild_id`, `discord_user_id`, `discord_bot_token`), then:
 ```bash
 make apply  # templates /opt/localaipc/discord.patch.json5 + /opt/localaipc/.env
-openclaw config patch --file /opt/localaipc/discord.patch.json5
-openclaw gateway restart
-openclaw channels status --probe
+# no openclaw CLI on host — one-shot container (same path, mounted ro):
+docker compose --profile cli run --rm openclaw-cli config patch --file /opt/localaipc/discord.patch.json5
+docker restart localaipc-openclaw-1
+docker logs localaipc-openclaw-1 --tail 8  # expect Discord probe, no trust warning
 ```
+Notes: Public Bot OFF is fine (invite URL still works); toggling privileged
+intents after inviting may need kick + re-invite. First DM triggers pairing.
+"Typing..." with no reply = agent still inferring on P2000 (slow, not stuck);
+true failure shows `embedded run timeout` in gateway logs.
 6. DM the bot in Discord → `openclaw pairing approve discord <CODE>` (expires 1h). Test loop: inbound "add chore every 10 days" + outbound daily briefing.
 7. Notification discipline: mute private server except DMs/mentions; keep AI chatter out of social servers.
 
@@ -116,7 +121,7 @@ ansible-vault create ansible/secrets.yml
 ansible-playbook -i ansible/inventory.ini -c local ansible/site.yml --ask-vault-pass
 ```
 
-Messaging secrets (`discord_bot_token`, plus `discord_guild_id`/`discord_user_id`) follow the same path — vault vars in `site.yml`, rendered to `/opt/localaipc/.env` (0600) and `discord.patch.json5` (0600). Token never committed.
+Messaging secrets (`discord_bot_token`, plus `discord_guild_id`/`discord_user_id`) follow the same path — vault vars in `site.yml`, rendered to `/opt/localaipc/.env` (0600, includes auto-generated `OPENCLAW_GATEWAY_TOKEN`) and `discord.patch.json5` (0644: IDs only, readable by the non-root CLI container). Token never committed. Gateway token is generate-once (`openssl rand` → `/opt/localaipc/.gateway-token`, 0600), reused across applies.
 
 ## Changing the system (add a package, service, setting)
 
@@ -134,3 +139,11 @@ Messaging secrets (`discord_bot_token`, plus `discord_guild_id`/`discord_user_id
 - Discord DMs ignored: `openclaw pairing list discord` → approve; check DM Privacy Settings ON
 - Discord guild silent: check `groupPolicy`/`guilds` allowlist + `requireMention`; `openclaw channels status --probe`
 - Discord fragment drift: `make check` shows `discord.patch.json5` diff → `make apply` → re-run `config patch` + `gateway restart`
+- Secrets silently empty on remote runs: `stat` executes on the target, so the
+  `playbook_dir` existence check must `delegate_to: localhost` (controller-side path)
+- OpenClaw `Restarting (78) Missing config`: seed `openclaw.json` (`gateway.mode: local`) before first boot
+- OpenClaw `EACCES mkdir .../state`: state dir must be owned by the image's runtime uid (resolved via `docker run --rm <image> id -u`), not root
+- Gateway `Refusing to bind ... without auth`: token is generated once box-side, passed via `.env`
+- `channel is configured, but external plugin "discord" is installed without explicit trust`: set `plugins.entries.discord.enabled=true` (in the patch fragment) and re-apply
+- Discord "typing..." forever: `context-pressure-diagnostic` + `embedded run timeout` = context cap too small (see ADR-002 revision); raise, don't retry blindly
+- Stale-output confusion: always run `make apply` from the Mac before re-running box commands; compare timestamps before concluding anything

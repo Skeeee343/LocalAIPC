@@ -1,6 +1,6 @@
 # ADR-002 — Local model under P2000 5GB, 4-core, no CPU offload
 
-Status: approved. Date: 2026-09-06.
+Status: approved. Date: 2026-09-06. Revised 2026-09-07 (context 4K → 8K, timeout 60s → 300s).
 
 ## Constraint (from user)
 
@@ -32,3 +32,14 @@ Custom GGUF + embedding-quant could be re-benched only with `nvidia-smi` proof.
 Every-X-days create, completion-anchor reset ("cleaned oven today, +90d"), Tuesday-weekly vs interval confusion, duplicate prevention, today/overdue summary, malformed-date rejection. Adapter validates everything (ADR-004) so model only needs correct structured calls. Pick highest tool-accuracy-per-VRAM, not highest MMLU.
 
 # ponytail: 4K context cap + adapter-side date math, raise context only if VRAM headroom measured, not assumed.
+
+## Revision 2026-09-07 (live evidence, supersedes 4K cap)
+
+Agent system prompt alone is ~5–10k tokens (`context-pressure-diagnostic:
+estimatedPromptTokens=10704` vs `promptBudgetBeforeReserve=2048`), so 4K
+starved the agent: `embedded run timeout` at 60s, Discord "typing..."
+forever. Fix in `openclaw.json.j2`: `contextTokens`/`num_ctx` 4096 → 8192,
+`agents.defaults.timeoutSeconds` 60 → 300. Baseline pre-change
+(`free`/`nvidia-smi`/`ollama ps`): RAM 3.0/30Gi, GPU 99% mid-inference,
+VRAM 3115/5120MiB, `qwen3:4b` 100% GPU ctx 4096 — 8K expected ~+1GB, fits.
+Re-measure after converge; 16K only with `nvidia-smi` proof.
