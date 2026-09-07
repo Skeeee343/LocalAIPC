@@ -49,7 +49,7 @@
 
     - name: base packages
       ansible.builtin.apt:
-        name: [curl, ca-certificates, docker.io, docker-compose-v2, nvidia-utils] # v2 = Resolute name for the compose plugin
+        name: [curl, ca-certificates, docker.io, docker-compose-v2, nvidia-driver-580-server] # 580 = last branch with Pascal P2000; -server = headless, pulls matching utils
         state: present
         update_cache: true
 
