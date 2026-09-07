@@ -13,7 +13,7 @@ Ansible runs locally on the single Ubuntu host (`ansible-playbook -i inventory.i
 ## IaC contract (so future agent can manage it)
 
 - Declarative YAML only, pinned images/model tags, `ansible-vault` or env-file secrets (never committed)
-- `make check` = `ansible-playbook --check --diff` + `curl :11434/api/tags + curl :8787/healthz + curl :3000/health + nvidia-smi`
+- `make check` = `ansible-playbook --check --diff` + server `curl :11434/api/tags + curl :8787/healthz + nvidia-smi` (via `server` group) + Mac-local `curl :3000/health` (adapter beside SP, ADR-001)
 - `make apply` = `ansible-playbook` (idempotent converge, never wipe; re-run repairs, never duplicates)
 - Backups via systemd timer (7d/4w/3m), data + config only, not model blobs
 - Layout: `ansible/inventory.ini` (localhost), `ansible/site.yml` (base, ollama native, compose template, backup timer)

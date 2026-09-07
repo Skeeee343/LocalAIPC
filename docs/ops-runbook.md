@@ -15,6 +15,24 @@ cd /opt/localaipc
 What `bootstrap.sh` does: nothing clever — installs Ansible, clones the
 repo, runs the playbook. All real config lives in `ansible/site.yml`.
 
+## Remote management from Mac (Ansible over SSH)
+
+One-time, when the box has an address:
+
+```bash
+# 1. Inventory: fill ansible/inventory.ini [server] (ansible_host + ansible_user)
+# 2. Key: cp ansible/secrets.yml.example ansible/secrets.yml, paste
+#    `cat ~/.ssh/id_ed25519.pub` into admin_ssh_key
+# 3. First key deploy needs a password login (or run bootstrap.sh on the box,
+#    which deploys the key locally): ansible-playbook -i ansible/inventory.ini \
+#      --limit server ansible/site.yml --ask-pass
+ssh <user>@<host>   # verify passwordless login
+```
+
+Daily: `make check` / `make apply` from this Mac (targets `--limit server`;
+health probes run on the box via the `server` group). On-box fallback:
+`make check-local` / `make apply-local`.
+
 ## Daily upkeep (drift without wipe)
 
 ```bash
@@ -31,7 +49,7 @@ Re-running `apply` with no drift changes nothing.
 |---|---|---|
 | Ollama (native) | `curl -s localhost:11434/api/tags` | model list incl. `qwen3:4b` |
 | OpenClaw | `curl -sf localhost:8787/healthz` | 200 (deep: `/readyz`) |
-| MCP adapter | `curl -sf localhost:3000/health` | 200 |
+| MCP adapter (this Mac) | `curl -sf localhost:3000/health` | 200 |
 | GPU | `nvidia-smi -L` | P2000 listed |
 
 ## Super Productivity (ADR-001 topology: desktop app + local adapter, server over Tailscale)
