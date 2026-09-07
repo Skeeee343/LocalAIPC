@@ -19,6 +19,8 @@
       ansible.builtin.stat:
         path: "{{ playbook_dir }}/secrets.yml"
       register: secrets_file
+      delegate_to: localhost # path is controller-side; the stat module would run it on the target
+      become: false
 
     - name: load secrets file (vault or plaintext, never committed)
       ansible.builtin.include_vars: "{{ playbook_dir }}/secrets.yml"
