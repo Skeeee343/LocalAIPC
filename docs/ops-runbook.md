@@ -72,12 +72,12 @@ Trial order is least-ops-first. One primary only. WebChat always available as fa
 4. Discord settings → Advanced → Developer Mode ON. Right-click server → Copy Server ID; right-click own avatar → Copy User ID. Server Privacy Settings → Direct Messages ON (for pairing).
 5. On host, set vault vars (`discord_guild_id`, `discord_user_id`, `discord_bot_token`), then:
 ```bash
-make apply  # templates /opt/localaipc/discord.patch.json5 + /opt/localaipc/.env
-# no openclaw CLI on host — one-shot container (same path, mounted ro):
-docker compose --profile cli run --rm openclaw-cli config patch --file /opt/localaipc/discord.patch.json5
+make apply  # seed now carries channels+plugin trust; restart converges
 docker restart localaipc-openclaw-1
 docker logs localaipc-openclaw-1 --tail 8  # expect Discord probe, no trust warning
 ```
+No `openclaw` CLI on host — pairing approvals use the one-shot container:
+`docker compose --profile cli run --rm openclaw-cli pairing approve discord <CODE>`.
 Notes: Public Bot OFF is fine (invite URL still works); toggling privileged
 intents after inviting may need kick + re-invite. First DM triggers pairing.
 "Typing..." with no reply = agent still inferring on P2000 (slow, not stuck);
