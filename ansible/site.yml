@@ -83,12 +83,11 @@
         dest: /opt/localaipc/discord.patch.json5
         mode: "0600"
 
-    - name: tokens to env file (vault-sourced, never commit)
+    - name: tokens to env file (vault-sourced, never commit; always present, may be empty pre-trial)
       ansible.builtin.copy:
         content: "DISCORD_BOT_TOKEN={{ discord_bot_token }}\n"
         dest: /opt/localaipc/.env
         mode: "0600"
-      when: discord_bot_token | length > 0
       no_log: true
 
     - name: tailscale installed (bridge to SP machine, ADR-001)
