@@ -1,17 +1,32 @@
 // Seeded by Ansible: gateway boots without `openclaw onboard`.
 // Local-first: Ollama qwen3:4b via host daemon. ctx8K: agent system prompt alone is ~5-10k tokens,
 // so ADR-002's 4K cap starved it (context-pressure timeouts); 8K fits P2000 5GB VRAM at Q4.
-// Gateway hot-reloads edits; Discord arrives via discord.patch.json5 (ADR-005).
+// Gateway hot-reloads edits; Discord converges from this seed (ADR-005).
 {
   gateway: { mode: "local", port: 18789 },
-{% if discord_bot_token | default("") %}
-  // Discord (ADR-005): single source of truth is this seed — `make apply` converges it,
-  // no manual `config patch` step. Token resolves from DISCORD_BOT_TOKEN env (never committed).
+  // Local-first: every enabled plugin injects tools into the system prompt.
+  // qwen3:4b drowns past ~10k tokens, so only ollama (model) + discord (channel)
+  // + linux-node (basic exec) stay on; memory-core needs an OpenAI key anyway.
   plugins: {
     entries: {
+{% if discord_bot_token | default("") %}
       discord: { enabled: true }, // explicit trust: gateway refuses untrusted external plugins
+{% endif %}
+      memory-core: { enabled: false },
+      browser: { enabled: false },
+      canvas: { enabled: false },
+      cua-computer: { enabled: false },
+      device-pair: { enabled: false },
+      file-transfer: { enabled: false },
+      geolocation: { enabled: false },
+      talk-voice: { enabled: false },
+      xai: { enabled: false },
+      anthropic: { enabled: false },
+      openai: { enabled: false },
     },
   },
+{% if discord_bot_token | default("") %}
+  // Discord (ADR-005): seed carries channels; token from DISCORD_BOT_TOKEN env.
   channels: {
     discord: {
       enabled: true,
