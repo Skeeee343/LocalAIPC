@@ -126,9 +126,19 @@
         dest: /opt/localaipc/discord.patch.json5
         mode: "0600"
 
+    - name: gateway token generated once (root-only, never committed)
+      ansible.builtin.shell: openssl rand -hex 32 > /opt/localaipc/.gateway-token && chmod 600 /opt/localaipc/.gateway-token
+      args: { creates: /opt/localaipc/.gateway-token }
+      no_log: true
+
+    - name: gateway token read
+      ansible.builtin.slurp: { src: /opt/localaipc/.gateway-token }
+      register: gw_token_file
+      no_log: true
+
     - name: tokens to env file (vault-sourced, never commit; always present, may be empty pre-trial)
       ansible.builtin.copy:
-        content: "DISCORD_BOT_TOKEN={{ discord_bot_token }}\n"
+        content: "DISCORD_BOT_TOKEN={{ discord_bot_token }}\nOPENCLAW_GATEWAY_TOKEN={{ gw_token_file.content | b64decode | trim }}\n"
         dest: /opt/localaipc/.env
         mode: "0600"
       no_log: true
