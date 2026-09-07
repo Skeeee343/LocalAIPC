@@ -47,7 +47,7 @@
     },
   },
 {% endif %}
-  agents: { defaults: { model: { primary: "ollama/qwen3:4b" }, timeoutSeconds: 300 } },
+  agents: { defaults: { model: { primary: "ollama/qwen2.5:3b" }, timeoutSeconds: 300 } },
   models: {
     providers: {
       ollama: {
@@ -57,12 +57,12 @@
         timeoutSeconds: 300,
         models: [
           {
-            id: "qwen3:4b",
-            name: "qwen3:4b",
+            id: "qwen2.5:3b",
+            name: "qwen2.5:3b",
             input: ["text"],
-            contextWindow: 262144,
+            contextWindow: 32768,
             contextTokens: 8192,
-            params: { num_ctx: 8192, thinking: false },
+            params: { num_ctx: 8192, thinking: false, num_predict: 512 },
           },
         ],
       },
