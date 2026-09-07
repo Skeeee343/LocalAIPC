@@ -12,6 +12,6 @@ services:
     entrypoint: ["node", "dist/index.js"] # one-shot CLI (config patch, pairing): docker compose --profile cli run --rm openclaw-cli <cmd>
     env_file: [/opt/localaipc/.env]
     extra_hosts: ["host.docker.internal:host-gateway"]
-    volumes: [/opt/localaipc/openclaw-home:/home/node/.openclaw]
+    volumes: [/opt/localaipc/openclaw-home:/home/node/.openclaw, /opt/localaipc/discord.patch.json5:/opt/localaipc/discord.patch.json5:ro]
     profiles: ["cli"]
 # Ollama native, SP + MCP adapter on Mac (tailnet), not here (ADR-001).
